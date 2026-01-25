@@ -1,4 +1,7 @@
 {
+  "[wgsl]": {
+    "editor.defaultFormatter": "wgsl-analyzer.wgsl-analyzer"
+  },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "files.associations": {
     "*.css": "tailwindcss"

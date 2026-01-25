@@ -3,6 +3,7 @@
     "bradlc.vscode-tailwindcss",
     "dbaeumer.vscode-eslint",
     "docker.docker",
-    "esbenp.prettier-vscode"
+    "esbenp.prettier-vscode",
+    "wgsl-analyzer.wgsl-analyzer"
   ]
 }
