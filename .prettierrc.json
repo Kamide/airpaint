@@ -1,0 +1,5 @@
+{
+  "$schema": "https://www.schemastore.org/prettierrc.json",
+  "trailingComma": "all",
+  "plugins": ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"]
+}

@@ -1,0 +1,55 @@
+services:
+  dev:
+    profiles:
+      - dev
+    build:
+      context: .
+      target: dev
+    stdin_open: true
+    tty: true
+    environment:
+      # noinspection SpellCheckingInspection
+      CHOKIDAR_USEPOLLING: true
+    ports:
+      - "5173:5173"
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+      - type: volume
+        source: node_modules
+        target: /app/node_modules
+  test:
+    profiles:
+      - test
+    build:
+      context: .
+      target: test
+    stdin_open: true
+    tty: true
+    environment:
+      # noinspection SpellCheckingInspection
+      CHOKIDAR_USEPOLLING: true
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+      - type: volume
+        source: node_modules
+        target: /app/node_modules
+  preview:
+    profiles:
+      - preview
+    build:
+      context: .
+      target: preview
+    stdin_open: true
+    tty: true
+    ports:
+      - "4173:4173"
+    volumes:
+      - type: volume
+        source: node_modules
+        target: /app/node_modules
+volumes:
+  node_modules:
