@@ -1,12 +1,16 @@
+import { Controls } from "@/components/controls";
 import { useGPUDevice, useGPUTextureFormat } from "@/hooks/gpu";
+import { WorldContext } from "@/hooks/world";
+import { airpaint, type World } from "@/lib/airpaint";
 import { cn } from "@/lib/utils";
 
 export type AirpaintProps = {
   className?: string;
+  world: World;
 };
 
 export function Airpaint(props: AirpaintProps) {
-  const { className } = props;
+  const { className, world } = props;
 
   const device = useGPUDevice();
   const format = useGPUTextureFormat();
@@ -22,21 +26,15 @@ export function Airpaint(props: AirpaintProps) {
       return;
     }
 
-    context.configure({
-      alphaMode: "premultiplied",
-      colorSpace: "srgb",
-      device: device,
-      format: format,
-    });
-
-    return () => {
-      context.unconfigure();
-    };
+    return airpaint({ canvas, context, device, format, world });
   };
 
   return (
     <div className={cn("relative overflow-hidden", className)}>
       <canvas ref={ref} className="h-full w-full" />
+      <WorldContext value={world}>
+        <Controls />
+      </WorldContext>
     </div>
   );
 }
