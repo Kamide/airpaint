@@ -1,7 +1,14 @@
 import computeShaderCode from "@/shaders/compute.wgsl";
 import renderShaderCode from "@/shaders/render.wgsl";
 
-import type { Store } from "@tanstack/react-store";
+import { type Store } from "@tanstack/react-store";
+
+export type Color = {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+};
 
 export type World = {
   pointer: Store<{
@@ -14,7 +21,7 @@ export type World = {
     radius: number;
     hardness: number;
     noise: number;
-    color: { r: number; g: number; b: number; a: number };
+    color: Color;
   }>;
   wind: Store<{
     angle: number;
@@ -146,11 +153,14 @@ function initEventListeners(self: Self): void {
 }
 
 function initTextures(self: Self) {
-  let data = new Uint8Array(self.canvas.width * self.canvas.height * 4);
+  let width = self.canvas.width;
+  let height = self.canvas.height;
+  let data = new Uint8Array(width * height * 4);
 
   const createTexture = (): GPUTexture => {
+    // noinspection SpellCheckingInspection
     const texture = self.device.createTexture({
-      size: [self.canvas.width, self.canvas.height],
+      size: [width, height],
       format: "rgba8unorm",
       usage:
         GPUTextureUsage.STORAGE_BINDING |
@@ -161,31 +171,70 @@ function initTextures(self: Self) {
     });
 
     self.device.queue.writeTexture(
-      { texture: texture },
+      { texture },
       data,
-      { bytesPerRow: self.canvas.width * 4 },
-      [self.canvas.width, self.canvas.height],
+      { bytesPerRow: width * 4 },
+      [width, height],
     );
 
     return texture;
   };
 
-  const pigment = [createTexture(), createTexture()];
-  const water = [createTexture(), createTexture()];
+  const pingPong = [
+    [createTexture(), createTexture()],
+    [createTexture(), createTexture()],
+  ];
 
   self.dispose.push(
-    self.world.size.subscribe(() => {
-      data = new Uint8Array(self.canvas.width * self.canvas.height * 4);
-      for (const texture of [pigment, water]) {
-        for (let i = 0; i < 2; i++) {
-          texture[i].destroy();
-          texture[i] = createTexture();
+    self.world.size.subscribe((val) => {
+      width = val.currentVal.width;
+      height = val.currentVal.height;
+      data = new Uint8Array(width * height * 4);
+
+      const copyWidth = Math.min(width, val.prevVal.width);
+      const copyHeight = Math.min(height, val.prevVal.height);
+      const encoder = self.device.createCommandEncoder();
+
+      const newAtlas: (GPUTexture | null)[][] = [
+        [null, null],
+        [null, null],
+      ];
+
+      for (let i = 0; i < 2; i++) {
+        const textures = pingPong[i];
+
+        for (let j = 0; j < 2; j++) {
+          const oldTexture = textures[j];
+          const newTexture = createTexture();
+          newAtlas[i][j] = newTexture;
+
+          encoder.copyTextureToTexture(
+            { texture: oldTexture },
+            { texture: newTexture },
+            {
+              width: copyWidth,
+              height: copyHeight,
+              depthOrArrayLayers: 1,
+            },
+          );
+        }
+      }
+
+      self.device.queue.submit([encoder.finish()]);
+
+      for (let i = 0; i < 2; i++) {
+        const textures = pingPong[i];
+
+        for (let j = 0; j < 2; j++) {
+          const oldTexture = textures[j];
+          textures[j] = (newAtlas as GPUTexture[][])[i][j];
+          oldTexture.destroy();
         }
       }
     }),
   );
 
-  return { pigment, water };
+  return { pigment: pingPong[0], water: pingPong[1] };
 }
 
 function initBuffers(self: Self) {
