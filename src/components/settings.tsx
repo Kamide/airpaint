@@ -6,11 +6,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { useWorldStore } from "@/hooks/world";
+import { type Color } from "@/lib/airpaint";
 import { useRadialMove } from "@mantine/hooks";
 import { Brush, Menu, Trash2, Wind } from "lucide-react";
 import { type JSX, type PropsWithChildren } from "react";
+import { type RgbaColor, RgbaColorPicker } from "react-colorful";
 
 export function Settings({ className }: { className?: string }) {
   return (
@@ -89,46 +96,49 @@ function BrushSettings() {
 function BrushColorSettings() {
   const [brush, setBrush] = useWorldStore((world) => world.brush);
 
-  const channelToHex = (f32: number) =>
-    (f32 * 255).toString(16).padStart(2, "0");
+  const rgbaFromNormalized = (normalized: Color) => ({
+    r: Math.round(normalized.r * 255),
+    g: Math.round(normalized.g * 255),
+    b: Math.round(normalized.b * 255),
+    a: normalized.a,
+  });
 
-  const rgbaToHex = (color: { r: number; g: number; b: number; a: number }) => {
-    const r = channelToHex(color.r);
-    const g = channelToHex(color.g);
-    const b = channelToHex(color.b);
-    return `#${r}${g}${b}`;
-  };
+  const normalizedFromRgba = (rgba: RgbaColor): Color => ({
+    r: rgba.r / 255,
+    g: rgba.g / 255,
+    b: rgba.b / 255,
+    a: rgba.a,
+  });
 
-  const hexToRgba = (hex: string) => {
-    const bigint = parseInt(hex.replace("#", ""), 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return { r: r / 255, g: g / 255, b: b / 255, a: brush.color.a };
-  };
+  const rgba = rgbaFromNormalized(brush.color);
 
   return (
-    <label className="ring-ring/50 bg-background relative grid h-16 w-16 translate-y-1 cursor-pointer place-items-center rounded-full border shadow-sm transition hover:ring-4">
-      <div
-        className="absolute max-h-full max-w-full rounded-full border"
-        style={{
-          width: brush.radius,
-          height: brush.radius,
-          backgroundColor: `rgba(${brush.color.r * 255},${brush.color.g * 255},${brush.color.b * 255},${brush.color.a})`,
-        }}
-      />
-      <input
-        type="color"
-        value={rgbaToHex(brush.color)}
-        onChange={(e) =>
-          setBrush((brush) => ({
-            ...brush,
-            color: hexToRgba(e.target.value),
-          }))
-        }
-        className="sr-only"
-      />
-    </label>
+    <Popover>
+      <PopoverTrigger>
+        <div className="ring-ring/50 bg-background relative grid h-16 w-16 translate-y-1 cursor-pointer place-items-center rounded-full border shadow-sm transition hover:ring-4">
+          <div
+            className="absolute max-h-full max-w-full rounded-full border"
+            style={{
+              width: brush.radius,
+              height: brush.radius,
+              backgroundColor: `rgba(${brush.color.r * 255},${brush.color.g * 255},${brush.color.b * 255},${brush.color.a})`,
+            }}
+          />
+        </div>
+      </PopoverTrigger>
+
+      <PopoverContent side="right" align="center" className="w-auto p-3">
+        <RgbaColorPicker
+          color={rgba}
+          onChange={(rgba) =>
+            setBrush((brush) => ({
+              ...brush,
+              color: normalizedFromRgba(rgba),
+            }))
+          }
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
