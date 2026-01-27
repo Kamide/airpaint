@@ -1,4 +1,4 @@
-import { Controls } from "@/components/controls";
+import { Settings } from "@/components/settings";
 import { useGPUDevice, useGPUTextureFormat } from "@/hooks/gpu";
 import { WorldContext } from "@/hooks/world";
 import { airpaint, type World } from "@/lib/airpaint";
@@ -31,9 +31,9 @@ export function Airpaint(props: AirpaintProps) {
 
   return (
     <div className={cn("relative overflow-hidden", className)}>
-      <canvas ref={ref} className="h-full w-full" />
+      <canvas ref={ref} className="h-full w-full touch-none" />
       <WorldContext value={world}>
-        <Controls />
+        <Settings className="absolute top-4 left-4" />
       </WorldContext>
     </div>
   );
