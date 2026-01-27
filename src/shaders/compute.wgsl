@@ -105,7 +105,7 @@ fn computeMain(@builtin(global_invocation_id) gid: vec3<u32>) {
       let pressure = clamp(pointer.pressure, 0.1, 1.0);
       let fbmValue = fbm(vec2<f32>(f32(pixelX), f32(pixelY)) * 0.02);
       let noiseOffset = (fbmValue - 0.5) * brush.noise;
-      let density = clamp(edgeFactor * pressure + noiseOffset, 0.0, 1.0);
+      let density = clamp((edgeFactor * pressure + noiseOffset) * brush.color.a, 0.0, 1.0);
 
       let hueShift = vec3<f32>(
         fbmValue * 0.04,
