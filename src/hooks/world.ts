@@ -15,3 +15,11 @@ export function useWorldStore<State>(getStore: (world: World) => Store<State>) {
   const setState = store.setState.bind(store);
   return [state, setState] as const;
 }
+
+export function useWorldDispatch(
+  getStore: (event: World["event"]) => Store<number>,
+) {
+  const world = useWorld();
+  const store = getStore(world.event);
+  return () => store.setState((state) => state + 1);
+}

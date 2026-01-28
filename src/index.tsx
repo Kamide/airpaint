@@ -40,6 +40,9 @@ createRoot(document.getElementById("root")!).render(
               width: 1,
               height: 1,
             }),
+            event: {
+              clear: new Store(0),
+            },
           }}
         />
       </ThemeProvider>

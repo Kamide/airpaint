@@ -32,6 +32,9 @@ export type World = {
     width: number;
     height: number;
   }>;
+  event: {
+    clear: Store<number>;
+  };
 };
 
 export type Props = {
@@ -231,6 +234,27 @@ function initTextures(self: Self) {
           oldTexture.destroy();
         }
       }
+    }),
+  );
+
+  self.dispose.push(
+    self.world.event.clear.subscribe(() => {
+      data.fill(0);
+
+      const encoder = self.device.createCommandEncoder();
+
+      for (let i = 0; i < 2; i++) {
+        for (let j = 0; j < 2; j++) {
+          self.device.queue.writeTexture(
+            { texture: pingPong[i][j] },
+            data,
+            { bytesPerRow: width * 4 },
+            [width, height],
+          );
+        }
+      }
+
+      self.device.queue.submit([encoder.finish()]);
     }),
   );
 

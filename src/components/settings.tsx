@@ -12,7 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
-import { useWorldStore } from "@/hooks/world";
+import { useWorldDispatch, useWorldStore } from "@/hooks/world";
 import { type Color } from "@/lib/airpaint";
 import { useRadialMove } from "@mantine/hooks";
 import { Brush, Menu, Trash2, Wind } from "lucide-react";
@@ -39,12 +39,14 @@ export function Settings({ className }: { className?: string }) {
 }
 
 function Actions() {
+  const clear = useWorldDispatch((event) => event.clear);
+
   return (
     <Button
       variant="destructive"
       size="icon-lg"
       className="w-full"
-      onClick={undefined} // TODO
+      onClick={clear}
     >
       <Trash2 className="h-4 w-4" aria-label="Clear Canvas" />
     </Button>
