@@ -57,9 +57,8 @@ fn noise2(position: vec2<f32>) -> f32 {
   let blendFactor = localCoord * localCoord * (3.0 - 2.0 * localCoord);
   let mixTop = mix(topLeft, topRight, blendFactor.x);
   let mixBottom = mix(bottomLeft, bottomRight, blendFactor.x);
-  let result = mix(mixTop, mixBottom, blendFactor.y);
 
-  return result;
+  return mix(mixTop, mixBottom, blendFactor.y);
 }
 
 fn fbm(position: vec2<f32>) -> f32 {
@@ -87,8 +86,12 @@ fn computeMain(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let uv = vec2<i32>(i32(pixelX), i32(pixelY));
-  var pigment = srgbToLinear(textureLoad(pigmentInput, uv, 0).rgb);
-  var water = srgbToLinear(textureLoad(waterInput, uv, 0).rgb);
+
+  var pigmentSample = textureLoad(pigmentInput, uv, 0);
+  var waterSample = textureLoad(waterInput, uv, 0);
+
+  var pigment = vec4<f32>(srgbToLinear(pigmentSample.rgb) * pigmentSample.a, pigmentSample.a);
+  var water = vec4<f32>(srgbToLinear(waterSample.rgb) * waterSample.a, waterSample.a);
 
   if (pointer.down == 1u) {
     let deltaX = f32(pixelX) - pointer.x;
@@ -96,35 +99,21 @@ fn computeMain(@builtin(global_invocation_id) gid: vec3<u32>) {
     let distance = sqrt(deltaX * deltaX + deltaY * deltaY);
 
     if (distance < brush.radius) {
-      let edgeFactor = 1.0 - smoothstep(
-        brush.radius * brush.hardness,
-        brush.radius,
-        distance
-      );
-
+      let edgeFactor = 1.0 - smoothstep(brush.radius * brush.hardness, brush.radius, distance);
       let pressure = clamp(pointer.pressure, 0.1, 1.0);
       let fbmValue = fbm(vec2<f32>(f32(pixelX), f32(pixelY)) * 0.02);
       let noiseOffset = (fbmValue - 0.5) * brush.noise;
       let density = clamp((edgeFactor * pressure + noiseOffset) * brush.color.a, 0.0, 1.0);
 
-      let hueShift = vec3<f32>(
-        fbmValue * 0.04,
-        -fbmValue * 0.02,
-        fbmValue * 0.03
-      );
+      let brushColorLinear = srgbToLinear(brush.color.rgb) * brush.color.a;
+      let brushColorPremult = vec4<f32>(brushColorLinear, brush.color.a);
 
-      let brushColorLinear = clamp(
-        srgbToLinear(brush.color.rgb) + hueShift,
-        vec3<f32>(0.0),
-        vec3<f32>(1.0)
-      );
-
-      pigment = mix(pigment, brushColorLinear, density);
+      pigment = brushColorPremult + pigment * (1.0 - brushColorPremult.a);
     }
   }
 
-  var sumPigment: vec3<f32> = vec3<f32>(0.0);
-  var sumWater: vec3<f32> = vec3<f32>(0.0);
+  var sumPigment: vec4<f32> = vec4<f32>(0.0);
+  var sumWater: vec4<f32> = vec4<f32>(0.0);
   var totalWeight: f32 = 0.0;
 
   let kernelRadius = 8;
@@ -150,11 +139,14 @@ fn computeMain(@builtin(global_invocation_id) gid: vec3<u32>) {
 
       weight = weight * (1.0 + f32(offsetX) * windX / 8.0 + f32(offsetY) * windY / 8.0 + turbulence);
 
-      let pigmentSample = srgbToLinear(textureLoad(pigmentInput, vec2<i32>(neighborX, neighborY), 0).rgb);
-      let waterSample = srgbToLinear(textureLoad(waterInput, vec2<i32>(neighborX, neighborY), 0).rgb);
+      let neighborPigment = textureLoad(pigmentInput, vec2<i32>(neighborX, neighborY), 0);
+      let neighborWater = textureLoad(waterInput, vec2<i32>(neighborX, neighborY), 0);
 
-      sumPigment = sumPigment + pigmentSample * weight;
-      sumWater = sumWater + waterSample * weight;
+      let pigmentLinear = vec4<f32>(srgbToLinear(neighborPigment.rgb) * neighborPigment.a, neighborPigment.a);
+      let waterLinear = vec4<f32>(srgbToLinear(neighborWater.rgb) * neighborWater.a, neighborWater.a);
+
+      sumPigment = sumPigment + pigmentLinear * weight;
+      sumWater = sumWater + waterLinear * weight;
       totalWeight = totalWeight + weight;
     }
   }
@@ -162,9 +154,17 @@ fn computeMain(@builtin(global_invocation_id) gid: vec3<u32>) {
   let diffusedPigment = mix(pigment, sumPigment / totalWeight, wind.diffusion);
   let diffusedWater = mix(water, sumWater / totalWeight, wind.diffusion);
 
-  let finalPigment = clamp(diffusedPigment, vec3<f32>(0.0), vec3<f32>(1.0));
-  let finalWater = clamp(diffusedWater * 0.995, vec3<f32>(0.0), vec3<f32>(1.0));
+  let finalPigment = clamp(diffusedPigment, vec4<f32>(0.0), vec4<f32>(1.0));
+  let finalWater = clamp(diffusedWater * vec4<f32>(1.0, 1.0, 1.0, 0.995), vec4<f32>(0.0), vec4<f32>(1.0));
 
-  textureStore(pigmentOutput, uv, vec4<f32>(linearToSrgb(finalPigment), 1.0));
-  textureStore(waterOutput, uv, vec4<f32>(linearToSrgb(finalWater), 1.0));
+  textureStore(
+    pigmentOutput,
+    uv,
+    vec4<f32>(linearToSrgb(finalPigment.rgb / max(finalPigment.a, 0.0001)), finalPigment.a)
+  );
+  textureStore(
+    waterOutput,
+    uv,
+    vec4<f32>(linearToSrgb(finalWater.rgb / max(finalWater.a, 0.0001)), finalWater.a)
+  );
 }

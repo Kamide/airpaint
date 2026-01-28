@@ -26,6 +26,10 @@ export function Airpaint(props: AirpaintProps) {
       return;
     }
 
+    if (import.meta.hot && location.hash == "#nop") {
+      return;
+    }
+
     return airpaint({ canvas, context, device, format, world });
   };
 

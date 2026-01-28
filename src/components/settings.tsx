@@ -127,7 +127,11 @@ function BrushColorSettings() {
         </div>
       </PopoverTrigger>
 
-      <PopoverContent side="right" align="center" className="w-auto p-3">
+      <PopoverContent
+        side="right"
+        align="center"
+        className="w-auto translate-y-1 p-3"
+      >
         <RgbaColorPicker
           color={rgba}
           onChange={(rgba) =>
