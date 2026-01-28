@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Airpaint</title>
+    <script>
+      {
+        const theme = localStorage.getItem("airpaint-theme") || "system";
+        const root = document.documentElement;
+
+        if (theme === "system") {
+          const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+            .matches
+            ? "dark"
+            : "light";
+
+          root.classList.add(systemTheme);
+        } else {
+          root.classList.add(theme);
+        }
+      }
+    </script>
     <script src="./src/index.tsx" type="module"></script>
   </head>
   <body>

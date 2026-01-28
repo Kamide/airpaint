@@ -10,7 +10,7 @@ import { createRoot } from "react-dom/client";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={new QueryClient()}>
-      <ThemeProvider>
+      <ThemeProvider storageKey="airpaint-theme">
         <Airpaint
           className="h-svh w-svw"
           world={{
