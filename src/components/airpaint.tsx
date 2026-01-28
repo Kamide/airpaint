@@ -1,3 +1,4 @@
+import { ModeToggle } from "@/components/mode-toggle";
 import { Settings } from "@/components/settings";
 import { useGPUDevice, useGPUTextureFormat } from "@/hooks/gpu";
 import { WorldContext } from "@/hooks/world";
@@ -39,6 +40,7 @@ export function Airpaint(props: AirpaintProps) {
       <WorldContext value={world}>
         <Settings className="absolute top-4 left-4" />
       </WorldContext>
+      <ModeToggle className="absolute top-4 right-4" />
     </div>
   );
 }
