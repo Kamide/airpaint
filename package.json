@@ -12,6 +12,7 @@
     "preview": "vite preview --host"
   },
   "overrides": {
+    "@rollup/pluginutils": "^5.3.0",
     "vite": "npm:rolldown-vite@7.3.1"
   },
   "dependencies": {
