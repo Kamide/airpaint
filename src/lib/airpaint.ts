@@ -99,9 +99,8 @@ function initContext(self: Self): void {
 function initResizer(self: Self): void {
   const resizer = new ResizeObserver((entries) => {
     const rect = entries[0].contentRect;
-    const dpr = window.devicePixelRatio || 1;
-    const width = Math.max(1, Math.round(rect.width * dpr));
-    const height = Math.max(1, Math.round(rect.height * dpr));
+    const width = rect.width;
+    const height = rect.height;
     self.rect = rect;
     self.canvas.width = width;
     self.canvas.height = height;
