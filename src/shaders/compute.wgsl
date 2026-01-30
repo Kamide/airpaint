@@ -101,14 +101,23 @@ fn computeMain(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (distance < brush.radius) {
       let edgeFactor = 1.0 - smoothstep(brush.radius * brush.hardness, brush.radius, distance);
       let pressure = clamp(pointer.pressure, 0.1, 1.0);
-      let fbmValue = fbm(vec2<f32>(f32(pixelX), f32(pixelY)) * 0.02);
-      let noiseOffset = (fbmValue - 0.5) * brush.noise;
-      let density = clamp((edgeFactor * pressure + noiseOffset) * brush.color.a, 0.0, 1.0);
 
-      let brushColorLinear = srgbToLinear(brush.color.rgb) * brush.color.a;
-      let brushColorPremult = vec4<f32>(brushColorLinear, brush.color.a);
+      let localPos = vec2<f32>(
+        f32(pixelX) - pointer.x,
+        f32(pixelY) - pointer.y
+      );
 
-      pigment = brushColorPremult + pigment * (1.0 - brushColorPremult.a);
+      let fbmValue = fbm(localPos * 0.08);
+      let noise = (fbmValue - 0.5) * brush.noise;
+
+      let baseDensity = edgeFactor * pressure;
+      let density = clamp(baseDensity + noise, 0.0, 1.0);
+      let alpha = density * brush.color.a;
+
+      let brushColorLinear = srgbToLinear(brush.color.rgb);
+      let brushColorPremult = vec4<f32>(brushColorLinear * alpha, alpha);
+
+      pigment = brushColorPremult + pigment * (1.0 - alpha);
     }
   }
 
